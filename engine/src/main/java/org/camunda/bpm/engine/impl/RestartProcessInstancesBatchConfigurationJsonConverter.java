@@ -15,14 +15,14 @@
  */
 package org.camunda.bpm.engine.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.cmd.AbstractProcessInstanceModificationCommand;
 import org.camunda.bpm.engine.impl.json.JsonObjectConverter;
 import org.camunda.bpm.engine.impl.json.ModificationCmdJsonConverter;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
+
+import java.util.List;
 
 public class RestartProcessInstancesBatchConfigurationJsonConverter extends JsonObjectConverter<RestartProcessInstancesBatchConfiguration>{
 
@@ -37,35 +37,30 @@ public class RestartProcessInstancesBatchConfigurationJsonConverter extends Json
   public static final String WITHOUT_BUSINESS_KEY = "withoutBusinessKey";
 
   @Override
-  public JSONObject toJsonObject(RestartProcessInstancesBatchConfiguration configuration) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(RestartProcessInstancesBatchConfiguration configuration) {
+    JsonObject jsonObjectBuilder = JsonMapper.createObjectNode();
     
-    JsonUtil.addListField(json, PROCESS_INSTANCE_IDS, configuration.getIds());
-    JsonUtil.addField(json, PROCESS_DEFINITION_ID, configuration.getProcessDefinitionId());
-    JsonUtil.addListField(json, INSTRUCTIONS, ModificationCmdJsonConverter.INSTANCE, configuration.getInstructions());
-    JsonUtil.addField(json, INITIAL_VARIABLES, configuration.isInitialVariables());
-    JsonUtil.addField(json, SKIP_CUSTOM_LISTENERS, configuration.isSkipCustomListeners());
-    JsonUtil.addField(json, SKIP_IO_MAPPINGS, configuration.isSkipIoMappings());
-    JsonUtil.addField(json, WITHOUT_BUSINESS_KEY, configuration.isWithoutBusinessKey());
+    JsonMapper.addListField(jsonObjectBuilder, PROCESS_INSTANCE_IDS, configuration.getIds());
+    JsonMapper.addField(jsonObjectBuilder, PROCESS_DEFINITION_ID, configuration.getProcessDefinitionId());
+    JsonMapper.addListField(jsonObjectBuilder, INSTRUCTIONS, ModificationCmdJsonConverter.INSTANCE, configuration.getInstructions());
+    JsonMapper.addField(jsonObjectBuilder, INITIAL_VARIABLES, configuration.isInitialVariables());
+    JsonMapper.addField(jsonObjectBuilder, SKIP_CUSTOM_LISTENERS, configuration.isSkipCustomListeners());
+    JsonMapper.addField(jsonObjectBuilder, SKIP_IO_MAPPINGS, configuration.isSkipIoMappings());
+    JsonMapper.addField(jsonObjectBuilder, WITHOUT_BUSINESS_KEY, configuration.isWithoutBusinessKey());
     
-    return json;
+    return jsonObjectBuilder;
   }
 
   @Override
-  public RestartProcessInstancesBatchConfiguration toObject(JSONObject json) {
+  public RestartProcessInstancesBatchConfiguration toObject(JsonObject json) {
     List<String> processInstanceIds = readProcessInstanceIds(json);
-    List<AbstractProcessInstanceModificationCommand> instructions = JsonUtil.jsonArrayAsList(json.getJSONArray(INSTRUCTIONS), ModificationCmdJsonConverter.INSTANCE);
+    List<AbstractProcessInstanceModificationCommand> instructions = JsonMapper.asList((JsonArray) json.get(INSTRUCTIONS), ModificationCmdJsonConverter.INSTANCE);
     
-    return new RestartProcessInstancesBatchConfiguration(processInstanceIds, instructions, json.getString(PROCESS_DEFINITION_ID),
-        json.getBoolean(INITIAL_VARIABLES), json.getBoolean(SKIP_CUSTOM_LISTENERS), json.getBoolean(SKIP_IO_MAPPINGS), json.getBoolean(WITHOUT_BUSINESS_KEY));
+    return new RestartProcessInstancesBatchConfiguration(processInstanceIds, instructions, json.get(PROCESS_DEFINITION_ID).getAsString(),
+        json.get(INITIAL_VARIABLES).getAsBoolean(), json.get(SKIP_CUSTOM_LISTENERS).getAsBoolean(), json.get(SKIP_IO_MAPPINGS).getAsBoolean(), json.get(WITHOUT_BUSINESS_KEY).getAsBoolean());
   }
 
-  protected List<String> readProcessInstanceIds(JSONObject jsonObject) {
-    List<Object> objects = JsonUtil.jsonArrayAsList(jsonObject.getJSONArray(PROCESS_INSTANCE_IDS));
-    List<String> processInstanceIds = new ArrayList<String>();
-    for (Object object : objects) {
-      processInstanceIds.add((String) object);
-    }
-    return processInstanceIds;
+  protected List<String> readProcessInstanceIds(JsonObject jsonObject) {
+    return JsonMapper.asList(jsonObject.get(PROCESS_INSTANCE_IDS));
   }
 }

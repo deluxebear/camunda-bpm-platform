@@ -15,12 +15,12 @@
  */
 package org.camunda.bpm.engine.impl.batch.job;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.batch.SetRetriesBatchConfiguration;
 import org.camunda.bpm.engine.impl.json.JsonObjectConverter;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,29 +32,23 @@ public class SetJobRetriesBatchConfigurationJsonConverter extends JsonObjectConv
   public static final String JOB_IDS = "jobIds";
   public static final String RETRIES = "retries";
 
-  public JSONObject toJsonObject(SetRetriesBatchConfiguration configuration) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(SetRetriesBatchConfiguration configuration) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
 
-    JsonUtil.addListField(json, JOB_IDS, configuration.getIds());
-    JsonUtil.addField(json, RETRIES, configuration.getRetries());
-    return json;
+    JsonMapper.addListField(jsonObject, JOB_IDS, configuration.getIds());
+    JsonMapper.addField(jsonObject, RETRIES, configuration.getRetries());
+    return jsonObject;
   }
 
-  public SetRetriesBatchConfiguration toObject(JSONObject json) {
-    SetRetriesBatchConfiguration configuration = new SetRetriesBatchConfiguration(
+  public SetRetriesBatchConfiguration toObject(JsonObject json) {
+
+    return new SetRetriesBatchConfiguration(
         readJobIds(json),
-        json.optInt(RETRIES)
+        json.get(RETRIES).getAsInt()
     );
-
-    return configuration;
   }
 
-  protected List<String> readJobIds(JSONObject jsonObject) {
-    List<Object> objects = JsonUtil.jsonArrayAsList(jsonObject.getJSONArray(JOB_IDS));
-    List<String> jobIds = new ArrayList<String>();
-    for (Object object : objects) {
-      jobIds.add(object.toString());
-    }
-    return jobIds;
+  protected List<String> readJobIds(JsonObject jsonObject) {
+    return JsonMapper.asList(jsonObject.get(JOB_IDS));
   }
 }

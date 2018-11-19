@@ -15,13 +15,14 @@
  */
 package org.camunda.bpm.engine.impl.json;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.ModificationBatchConfiguration;
 import org.camunda.bpm.engine.impl.cmd.AbstractProcessInstanceModificationCommand;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
+
+import java.util.List;
 
 public class ModificationBatchConfigurationJsonConverter extends JsonObjectConverter<ModificationBatchConfiguration>{
 
@@ -33,27 +34,27 @@ public class ModificationBatchConfigurationJsonConverter extends JsonObjectConve
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
 
   @Override
-  public JSONObject toJsonObject(ModificationBatchConfiguration configuration) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(ModificationBatchConfiguration configuration) {
+    JsonObject jsonObjectBuilder = JsonMapper.createObjectNode();
 
-    JsonUtil.addListField(json, INSTRUCTIONS, ModificationCmdJsonConverter.INSTANCE, configuration.getInstructions());
-    JsonUtil.addListField(json, PROCESS_INSTANCE_IDS, configuration.getIds());
-    JsonUtil.addField(json, PROCESS_DEFINITION_ID, configuration.getProcessDefinitionId());
-    JsonUtil.addField(json, SKIP_LISTENERS, configuration.isSkipCustomListeners());
-    JsonUtil.addField(json, SKIP_IO_MAPPINGS, configuration.isSkipIoMappings());
+    JsonMapper.addListField(jsonObjectBuilder, INSTRUCTIONS, ModificationCmdJsonConverter.INSTANCE, configuration.getInstructions());
+    JsonMapper.addListField(jsonObjectBuilder, PROCESS_INSTANCE_IDS, configuration.getIds());
+    JsonMapper.addField(jsonObjectBuilder, PROCESS_DEFINITION_ID, configuration.getProcessDefinitionId());
+    JsonMapper.addField(jsonObjectBuilder, SKIP_LISTENERS, configuration.isSkipCustomListeners());
+    JsonMapper.addField(jsonObjectBuilder, SKIP_IO_MAPPINGS, configuration.isSkipIoMappings());
 
-    return json;
+    return jsonObjectBuilder;
   }
 
   @Override
-  public ModificationBatchConfiguration toObject(JSONObject json) {
+  public ModificationBatchConfiguration toObject(JsonObject json) {
 
     List<String> processInstanceIds = readProcessInstanceIds(json);
-    String processDefinitionId = json.getString(PROCESS_DEFINITION_ID);
-    List<AbstractProcessInstanceModificationCommand> instructions = JsonUtil.jsonArrayAsList(json.getJSONArray(INSTRUCTIONS),
+    String processDefinitionId = json.get(PROCESS_DEFINITION_ID).getAsString();
+    List<AbstractProcessInstanceModificationCommand> instructions = JsonMapper.asList((JsonArray) json.get(INSTRUCTIONS),
         ModificationCmdJsonConverter.INSTANCE);
-    boolean skipCustomListeners = json.getBoolean(SKIP_LISTENERS);
-    boolean skipIoMappings = json.getBoolean(SKIP_IO_MAPPINGS);
+    boolean skipCustomListeners = json.get(SKIP_LISTENERS).getAsBoolean();
+    boolean skipIoMappings = json.get(SKIP_IO_MAPPINGS).getAsBoolean();
 
     return new ModificationBatchConfiguration(
         processInstanceIds,
@@ -63,13 +64,8 @@ public class ModificationBatchConfigurationJsonConverter extends JsonObjectConve
         skipIoMappings);
   }
 
-  protected List<String> readProcessInstanceIds(JSONObject jsonObject) {
-    List<Object> objects = JsonUtil.jsonArrayAsList(jsonObject.getJSONArray(PROCESS_INSTANCE_IDS));
-    List<String> processInstanceIds = new ArrayList<String>();
-    for (Object object : objects) {
-      processInstanceIds.add((String) object);
-    }
-    return processInstanceIds;
+  protected List<String> readProcessInstanceIds(JsonObject jsonObject) {
+    return JsonMapper.asList(jsonObject.get(PROCESS_INSTANCE_IDS));
   }
 
 }

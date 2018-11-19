@@ -15,10 +15,15 @@
  */
 package org.camunda.bpm.engine.impl.jobexecutor.historycleanup;
 
+import com.google.gson.JsonObject;
+import org.camunda.bpm.engine.impl.jobexecutor.JobHandlerConfiguration;
+
 import java.util.Calendar;
 import java.util.Date;
-import org.camunda.bpm.engine.impl.jobexecutor.JobHandlerConfiguration;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addField;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.createObjectNode;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.writeValueAsString;
 
 /**
  * @author Svetlana Dorokhova
@@ -55,24 +60,25 @@ public class HistoryCleanupJobHandlerConfiguration implements JobHandlerConfigur
 
   @Override
   public String toCanonicalString() {
-    JSONObject json = new JSONObject();
-    json.put(JOB_CONFIG_COUNT_EMPTY_RUNS, countEmptyRuns);
-    json.put(JOB_CONFIG_EXECUTE_AT_ONCE, immediatelyDue);
-    json.put(JOB_CONFIG_MINUTE_FROM, minuteFrom);
-    json.put(JOB_CONFIG_MINUTE_TO, minuteTo);
-    return json.toString();
+    JsonObject jsonObject = createObjectNode();
+    addField(jsonObject, JOB_CONFIG_COUNT_EMPTY_RUNS, countEmptyRuns);
+    addField(jsonObject, JOB_CONFIG_EXECUTE_AT_ONCE, immediatelyDue);
+    addField(jsonObject, JOB_CONFIG_MINUTE_FROM, minuteFrom);
+    addField(jsonObject, JOB_CONFIG_MINUTE_TO, minuteTo);
+
+    return writeValueAsString(jsonObject);
   }
 
-  public static HistoryCleanupJobHandlerConfiguration fromJson(JSONObject jsonObject) {
+  public static HistoryCleanupJobHandlerConfiguration fromJson(JsonObject jsonObject) {
     HistoryCleanupJobHandlerConfiguration config = new HistoryCleanupJobHandlerConfiguration();
     if (jsonObject.has(JOB_CONFIG_COUNT_EMPTY_RUNS)) {
-      config.setCountEmptyRuns(jsonObject.getInt(JOB_CONFIG_COUNT_EMPTY_RUNS));
+      config.setCountEmptyRuns(jsonObject.get(JOB_CONFIG_COUNT_EMPTY_RUNS).getAsInt());
     }
     if (jsonObject.has(JOB_CONFIG_EXECUTE_AT_ONCE)) {
-      config.setImmediatelyDue(jsonObject.getBoolean(JOB_CONFIG_EXECUTE_AT_ONCE));
+      config.setImmediatelyDue(jsonObject.get(JOB_CONFIG_EXECUTE_AT_ONCE).getAsBoolean());
     }
-    config.setMinuteFrom(jsonObject.getInt(JOB_CONFIG_MINUTE_FROM));
-    config.setMinuteTo(jsonObject.getInt(JOB_CONFIG_MINUTE_TO));
+    config.setMinuteFrom(jsonObject.get(JOB_CONFIG_MINUTE_FROM).getAsInt());
+    config.setMinuteTo(jsonObject.get(JOB_CONFIG_MINUTE_TO).getAsInt());
     return config;
   }
 
@@ -82,8 +88,7 @@ public class HistoryCleanupJobHandlerConfiguration implements JobHandlerConfigur
    * @return date with delay
    */
   public Date getNextRunWithDelay(Date date) {
-    Date result = addSeconds(date, Math.min((int)(Math.pow(2., (double)countEmptyRuns) * START_DELAY), MAX_DELAY));
-    return result;
+    return addSeconds(date, Math.min((int)(Math.pow(2., (double)countEmptyRuns) * START_DELAY), MAX_DELAY));
   }
 
   private Date addSeconds(Date date, int amount) {

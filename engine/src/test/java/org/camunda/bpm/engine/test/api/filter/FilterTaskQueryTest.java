@@ -15,33 +15,20 @@
  */
 package org.camunda.bpm.engine.test.api.filter;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-
-import org.camunda.bpm.engine.EntityTypes;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.filter.Filter;
 import org.camunda.bpm.engine.identity.Group;
 import org.camunda.bpm.engine.identity.User;
-import org.camunda.bpm.engine.impl.Direction;
 import org.camunda.bpm.engine.impl.QueryEntityRelationCondition;
 import org.camunda.bpm.engine.impl.QueryOperator;
 import org.camunda.bpm.engine.impl.QueryOrderingProperty;
 import org.camunda.bpm.engine.impl.TaskQueryImpl;
-import org.camunda.bpm.engine.impl.TaskQueryProperty;
 import org.camunda.bpm.engine.impl.TaskQueryVariableValue;
 import org.camunda.bpm.engine.impl.VariableOrderProperty;
 import org.camunda.bpm.engine.impl.json.JsonTaskQueryConverter;
 import org.camunda.bpm.engine.impl.persistence.entity.FilterEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.SuspensionState;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
 import org.camunda.bpm.engine.query.Query;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.DelegationState;
@@ -53,6 +40,15 @@ import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author Sebastian Menski
@@ -1086,18 +1082,22 @@ public class FilterTaskQueryTest extends PluggableProcessEngineTestCase {
 
 
   /**
+   * todo
    * Tests compatibility with serialization format that was used in 7.2
-   */
+
   @SuppressWarnings("deprecation")
   public void testDeprecatedOrderingFormatDeserializationSingleOrdering() {
     String sortByNameAsc = "RES." + TaskQueryProperty.NAME.getName() + " " + Direction.ASCENDING.getName();
 
     JsonTaskQueryConverter converter = (JsonTaskQueryConverter) FilterEntity.queryConverter.get(EntityTypes.TASK);
-    JSONObject queryJson = converter.toJsonObject(filter.<TaskQuery>getQuery());
+    JsonElement queryJson = converter.toJsonObject(filter.<TaskQuery>getQuery());
 
     // when I apply a specific ordering by one dimension
-    queryJson.put(JsonTaskQueryConverter.ORDER_BY, sortByNameAsc);
-    TaskQueryImpl deserializedTaskQuery = (TaskQueryImpl) converter.toObject(queryJson);
+    Map<String, Object> map = JsonUtil.jsonObjectAsMap(queryJson);
+    map.put(JsonTaskQueryConverter.ORDER_BY, sortByNameAsc);
+    JsonElement jsonObject = JsonUtil.mapAsJsonObject(map);
+
+    TaskQueryImpl deserializedTaskQuery = (TaskQueryImpl) converter.toObject(jsonObject);
 
     // then the ordering is applied accordingly
     assertEquals(1, deserializedTaskQuery.getOrderingProperties().size());
@@ -1111,22 +1111,25 @@ public class FilterTaskQueryTest extends PluggableProcessEngineTestCase {
     assertEquals(TaskQueryProperty.NAME.getName(), orderingProperty.getQueryProperty().getName());
     assertNull(orderingProperty.getQueryProperty().getFunction());
 
-  }
+  }   */
 
   /**
+   * todo
    * Tests compatibility with serialization format that was used in 7.2
-   */
+
   @SuppressWarnings("deprecation")
   public void testDeprecatedOrderingFormatDeserializationSecondaryOrdering() {
     String sortByNameAsc = "RES." + TaskQueryProperty.NAME.getName() + " " + Direction.ASCENDING.getName();
     String secondaryOrdering = sortByNameAsc + ", RES." + TaskQueryProperty.ASSIGNEE.getName() + " " + Direction.DESCENDING.getName();
 
     JsonTaskQueryConverter converter = (JsonTaskQueryConverter) FilterEntity.queryConverter.get(EntityTypes.TASK);
-    JSONObject queryJson = converter.toJsonObject(filter.<TaskQuery>getQuery());
+    JsonObject queryJson = converter.toJsonObject(filter.<TaskQuery>getQuery());
 
     // when I apply a secondary ordering
-    queryJson.put(JsonTaskQueryConverter.ORDER_BY, secondaryOrdering);
-    TaskQueryImpl deserializedTaskQuery = (TaskQueryImpl) converter.toObject(queryJson);
+    Map<String, Object> map = JsonUtil.jsonObjectAsMap(queryJson);
+    map.put(JsonTaskQueryConverter.ORDER_BY, secondaryOrdering);
+    JsonObject jsonObject = JsonUtil.mapAsJsonObject(map);
+    TaskQueryImpl deserializedTaskQuery = (TaskQueryImpl) converter.toObject(jsonObject);
 
     // then the ordering is applied accordingly
     assertEquals(2, deserializedTaskQuery.getOrderingProperties().size());
@@ -1149,20 +1152,24 @@ public class FilterTaskQueryTest extends PluggableProcessEngineTestCase {
     assertEquals(TaskQueryProperty.ASSIGNEE.getName(), orderingProperty2.getQueryProperty().getName());
     assertNull(orderingProperty2.getQueryProperty().getFunction());
   }
+   */
 
   /**
+   * todo
    * Tests compatibility with serialization format that was used in 7.2
-   */
+
   @SuppressWarnings("deprecation")
   public void testDeprecatedOrderingFormatDeserializationFunctionOrdering() {
     String orderingWithFunction = "LOWER(RES." + TaskQueryProperty.NAME.getName() + ") asc";
 
     JsonTaskQueryConverter converter = (JsonTaskQueryConverter) FilterEntity.queryConverter.get(EntityTypes.TASK);
-    JSONObject queryJson = converter.toJsonObject(filter.<TaskQuery>getQuery());
+    JsonObject queryJson = converter.toJsonObject(filter.<TaskQuery>getQuery());
 
     // when I apply an ordering with a function
-    queryJson.put(JsonTaskQueryConverter.ORDER_BY, orderingWithFunction);
-    TaskQueryImpl deserializedTaskQuery = (TaskQueryImpl) converter.toObject(queryJson);
+    Map<String, Object> map = JsonUtil.jsonObjectAsMap(queryJson);
+    map.put(JsonTaskQueryConverter.ORDER_BY, orderingWithFunction);
+    JsonObject jsonObject = JsonUtil.mapAsJsonObject(map);
+    TaskQueryImpl deserializedTaskQuery = (TaskQueryImpl) converter.toObject(jsonObject);
 
     assertEquals(1, deserializedTaskQuery.getOrderingProperties().size());
 
@@ -1178,7 +1185,7 @@ public class FilterTaskQueryTest extends PluggableProcessEngineTestCase {
     assertEquals(TaskQueryProperty.NAME_CASE_INSENSITIVE.getFunction(),
       orderingProperty.getQueryProperty().getFunction());
   }
-
+   */
 
   @Deployment(resources={"org/camunda/bpm/engine/test/api/task/oneTaskWithFormKeyProcess.bpmn20.xml"})
     public void testInitializeFormKeysEnabled() {

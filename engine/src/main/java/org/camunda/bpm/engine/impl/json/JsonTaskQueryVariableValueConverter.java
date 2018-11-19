@@ -15,29 +15,34 @@
  */
 package org.camunda.bpm.engine.impl.json;
 
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.QueryOperator;
 import org.camunda.bpm.engine.impl.TaskQueryVariableValue;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
+
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addField;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addFieldTyped;
 
 /**
  * @author Sebastian Menski
  */
 public class JsonTaskQueryVariableValueConverter extends JsonObjectConverter<TaskQueryVariableValue> {
 
-  public JSONObject toJsonObject(TaskQueryVariableValue variable) {
-    JSONObject json = new JSONObject();
-    json.put("name", variable.getName());
-    json.put("value", variable.getValue());
-    json.put("operator", variable.getOperator());
-    return json;
+  public JsonObject toJsonObject(TaskQueryVariableValue variable) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
+    addField(jsonObject, "name", variable.getName());
+    addFieldTyped(jsonObject, "value", variable.getTypedValue());
+    addField(jsonObject, "operator", variable.getOperator().name());
+
+    return jsonObject;
   }
 
-  public TaskQueryVariableValue toObject(JSONObject json) {
-    String name = json.getString("name");
+  public TaskQueryVariableValue toObject(JsonObject json) {
+    String name = json.get("name").getAsString();
     Object value = json.get("value");
-    QueryOperator operator = QueryOperator.valueOf(json.getString("operator"));
-    boolean isTaskVariable = json.getBoolean("taskVariable");
-    boolean isProcessVariable = json.getBoolean("processVariable");
+    QueryOperator operator = QueryOperator.valueOf(json.get("operator").getAsString());
+    boolean isTaskVariable = json.get("taskVariable").getAsBoolean();
+    boolean isProcessVariable = json.get("processVariable").getAsBoolean();
     return new TaskQueryVariableValue(name, value, operator, isTaskVariable, isProcessVariable);
   }
 }

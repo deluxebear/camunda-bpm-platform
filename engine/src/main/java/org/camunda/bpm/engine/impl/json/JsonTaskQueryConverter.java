@@ -15,27 +15,30 @@
  */
 package org.camunda.bpm.engine.impl.json;
 
-import static org.camunda.bpm.engine.impl.util.JsonUtil.addArrayField;
-import static org.camunda.bpm.engine.impl.util.JsonUtil.addDateField;
-import static org.camunda.bpm.engine.impl.util.JsonUtil.addDefaultField;
-import static org.camunda.bpm.engine.impl.util.JsonUtil.addField;
-import static org.camunda.bpm.engine.impl.util.JsonUtil.addListField;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.camunda.bpm.engine.impl.QueryOperator;
 import org.camunda.bpm.engine.impl.QueryOrderingProperty;
 import org.camunda.bpm.engine.impl.TaskQueryImpl;
 import org.camunda.bpm.engine.impl.TaskQueryVariableValue;
 import org.camunda.bpm.engine.impl.persistence.entity.SuspensionState;
-import org.camunda.bpm.engine.impl.util.json.JSONArray;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 import org.camunda.bpm.engine.task.DelegationState;
 import org.camunda.bpm.engine.task.TaskQuery;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addArrayField;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addDateField;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addDefaultField;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addElement;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addField;
+import static org.camunda.bpm.engine.impl.util.JsonMapper.addListField;
 
 /**
  * @author Sebastian Menski
@@ -124,375 +127,372 @@ public class JsonTaskQueryConverter extends JsonObjectConverter<TaskQuery> {
   protected static JsonTaskQueryVariableValueConverter variableValueConverter = new JsonTaskQueryVariableValueConverter();
 
   @Override
-  public JSONObject toJsonObject(TaskQuery taskQuery) {
+  public JsonObject toJsonObject(TaskQuery taskQuery) {
     return toJsonObject(taskQuery, false);
   }
 
-  public JSONObject toJsonObject(TaskQuery taskQuery, boolean isOrQueryActive) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(TaskQuery taskQuery, boolean isOrQueryActive) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
     TaskQueryImpl query = (TaskQueryImpl) taskQuery;
 
-    addField(json, TASK_ID, query.getTaskId());
-    addField(json, NAME, query.getName());
-    addField(json, NAME_NOT_EQUAL, query.getNameNotEqual());
-    addField(json, NAME_LIKE, query.getNameLike());
-    addField(json, NAME_NOT_LIKE, query.getNameNotLike());
-    addField(json, DESCRIPTION, query.getDescription());
-    addField(json, DESCRIPTION_LIKE, query.getDescriptionLike());
-    addField(json, PRIORITY, query.getPriority());
-    addField(json, MIN_PRIORITY, query.getMinPriority());
-    addField(json, MAX_PRIORITY, query.getMaxPriority());
-    addField(json, ASSIGNEE, query.getAssignee());
-    addField(json, ASSIGNEE_LIKE, query.getAssigneeLike());
-    addField(json, INVOLVED_USER, query.getInvolvedUser());
-    addField(json, OWNER, query.getOwner());
-    addDefaultField(json, UNASSIGNED, false, query.isUnassigned());
-    addDefaultField(json, ASSIGNED, false, query.isAssigned());
-    addField(json, DELEGATION_STATE, query.getDelegationStateString());
-    addField(json, CANDIDATE_USER, query.getCandidateUser());
-    addField(json, CANDIDATE_GROUP, query.getCandidateGroup());
-    addListField(json, CANDIDATE_GROUPS, query.getCandidateGroupsInternal());
-    addDefaultField(json, WITH_CANDIDATE_GROUPS, false, query.isWithCandidateGroups());
-    addDefaultField(json, WITHOUT_CANDIDATE_GROUPS, false, query.isWithoutCandidateGroups());
-    addDefaultField(json, WITH_CANDIDATE_USERS, false, query.isWithCandidateUsers());
-    addDefaultField(json, WITHOUT_CANDIDATE_USERS, false, query.isWithoutCandidateUsers());
-    addField(json, INCLUDE_ASSIGNED_TASKS, query.isIncludeAssignedTasksInternal());
-    addField(json, PROCESS_INSTANCE_ID, query.getProcessInstanceId());
-    addField(json, EXECUTION_ID, query.getExecutionId());
-    addArrayField(json, ACTIVITY_INSTANCE_ID_IN, query.getActivityInstanceIdIn());
-    addDateField(json, CREATED, query.getCreateTime());
-    addDateField(json, CREATED_BEFORE, query.getCreateTimeBefore());
-    addDateField(json, CREATED_AFTER, query.getCreateTimeAfter());
-    addField(json, KEY, query.getKey());
-    addArrayField(json, KEYS, query.getKeys());
-    addField(json, KEY_LIKE, query.getKeyLike());
-    addField(json, PARENT_TASK_ID, query.getParentTaskId());
-    addField(json, PROCESS_DEFINITION_KEY, query.getProcessDefinitionKey());
-    addArrayField(json, PROCESS_DEFINITION_KEYS, query.getProcessDefinitionKeys());
-    addField(json, PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
-    addField(json, PROCESS_DEFINITION_NAME, query.getProcessDefinitionName());
-    addField(json, PROCESS_DEFINITION_NAME_LIKE, query.getProcessDefinitionNameLike());
-    addField(json, PROCESS_INSTANCE_BUSINESS_KEY, query.getProcessInstanceBusinessKey());
-    addArrayField(json, PROCESS_INSTANCE_BUSINESS_KEYS, query.getProcessInstanceBusinessKeys());
-    addField(json, PROCESS_INSTANCE_BUSINESS_KEY_LIKE, query.getProcessInstanceBusinessKeyLike());
-    addVariablesFields(json, query.getVariables());
-    addDateField(json, DUE, query.getDueDate());
-    addDateField(json, DUE_BEFORE, query.getDueBefore());
-    addDateField(json, DUE_AFTER, query.getDueAfter());
-    addDateField(json, FOLLOW_UP, query.getFollowUpDate());
-    addDateField(json, FOLLOW_UP_BEFORE, query.getFollowUpBefore());
-    addDefaultField(json, FOLLOW_UP_NULL_ACCEPTED, false, query.isFollowUpNullAccepted());
-    addDateField(json, FOLLOW_UP_AFTER, query.getFollowUpAfter());
-    addDefaultField(json, EXCLUDE_SUBTASKS, false, query.isExcludeSubtasks());
-    addSuspensionStateField(json, query.getSuspensionState());
-    addField(json, CASE_DEFINITION_KEY, query.getCaseDefinitionKey());
-    addField(json, CASE_DEFINITION_ID, query.getCaseDefinitionId());
-    addField(json, CASE_DEFINITION_NAME, query.getCaseDefinitionName());
-    addField(json, CASE_DEFINITION_NAME_LIKE, query.getCaseDefinitionNameLike());
-    addField(json, CASE_INSTANCE_ID, query.getCaseInstanceId());
-    addField(json, CASE_INSTANCE_BUSINESS_KEY, query.getCaseInstanceBusinessKey());
-    addField(json, CASE_INSTANCE_BUSINESS_KEY_LIKE, query.getCaseInstanceBusinessKeyLike());
-    addField(json, CASE_EXECUTION_ID, query.getCaseExecutionId());
-    addTenantIdFields(json, query);
+    addField(jsonObject, TASK_ID, query.getTaskId());
+    addField(jsonObject, NAME, query.getName());
+    addField(jsonObject, NAME_NOT_EQUAL, query.getNameNotEqual());
+    addField(jsonObject, NAME_LIKE, query.getNameLike());
+    addField(jsonObject, NAME_NOT_LIKE, query.getNameNotLike());
+    addField(jsonObject, DESCRIPTION, query.getDescription());
+    addField(jsonObject, DESCRIPTION_LIKE, query.getDescriptionLike());
+    addField(jsonObject, PRIORITY, query.getPriority());
+    addField(jsonObject, MIN_PRIORITY, query.getMinPriority());
+    addField(jsonObject, MAX_PRIORITY, query.getMaxPriority());
+    addField(jsonObject, ASSIGNEE, query.getAssignee());
+    addField(jsonObject, ASSIGNEE_LIKE, query.getAssigneeLike());
+    addField(jsonObject, INVOLVED_USER, query.getInvolvedUser());
+    addField(jsonObject, OWNER, query.getOwner());
+    addDefaultField(jsonObject, UNASSIGNED, false, query.isUnassigned());
+    addDefaultField(jsonObject, ASSIGNED, false, query.isAssigned());
+    addField(jsonObject, DELEGATION_STATE, query.getDelegationStateString());
+    addField(jsonObject, CANDIDATE_USER, query.getCandidateUser());
+    addField(jsonObject, CANDIDATE_GROUP, query.getCandidateGroup());
+    addListField(jsonObject, CANDIDATE_GROUPS, query.getCandidateGroupsInternal());
+    addDefaultField(jsonObject, WITH_CANDIDATE_GROUPS, false, query.isWithCandidateGroups());
+    addDefaultField(jsonObject, WITHOUT_CANDIDATE_GROUPS, false, query.isWithoutCandidateGroups());
+    addDefaultField(jsonObject, WITH_CANDIDATE_USERS, false, query.isWithCandidateUsers());
+    addDefaultField(jsonObject, WITHOUT_CANDIDATE_USERS, false, query.isWithoutCandidateUsers());
+    addField(jsonObject, INCLUDE_ASSIGNED_TASKS, query.isIncludeAssignedTasksInternal());
+    addField(jsonObject, PROCESS_INSTANCE_ID, query.getProcessInstanceId());
+    addField(jsonObject, EXECUTION_ID, query.getExecutionId());
+    addArrayField(jsonObject, ACTIVITY_INSTANCE_ID_IN, query.getActivityInstanceIdIn());
+    addDateField(jsonObject, CREATED, query.getCreateTime());
+    addDateField(jsonObject, CREATED_BEFORE, query.getCreateTimeBefore());
+    addDateField(jsonObject, CREATED_AFTER, query.getCreateTimeAfter());
+    addField(jsonObject, KEY, query.getKey());
+    addArrayField(jsonObject, KEYS, query.getKeys());
+    addField(jsonObject, KEY_LIKE, query.getKeyLike());
+    addField(jsonObject, PARENT_TASK_ID, query.getParentTaskId());
+    addField(jsonObject, PROCESS_DEFINITION_KEY, query.getProcessDefinitionKey());
+    addArrayField(jsonObject, PROCESS_DEFINITION_KEYS, query.getProcessDefinitionKeys());
+    addField(jsonObject, PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
+    addField(jsonObject, PROCESS_DEFINITION_NAME, query.getProcessDefinitionName());
+    addField(jsonObject, PROCESS_DEFINITION_NAME_LIKE, query.getProcessDefinitionNameLike());
+    addField(jsonObject, PROCESS_INSTANCE_BUSINESS_KEY, query.getProcessInstanceBusinessKey());
+    addArrayField(jsonObject, PROCESS_INSTANCE_BUSINESS_KEYS, query.getProcessInstanceBusinessKeys());
+    addField(jsonObject, PROCESS_INSTANCE_BUSINESS_KEY_LIKE, query.getProcessInstanceBusinessKeyLike());
+    addVariablesFields(jsonObject, query.getVariables());
+    addDateField(jsonObject, DUE, query.getDueDate());
+    addDateField(jsonObject, DUE_BEFORE, query.getDueBefore());
+    addDateField(jsonObject, DUE_AFTER, query.getDueAfter());
+    addDateField(jsonObject, FOLLOW_UP, query.getFollowUpDate());
+    addDateField(jsonObject, FOLLOW_UP_BEFORE, query.getFollowUpBefore());
+    addDefaultField(jsonObject, FOLLOW_UP_NULL_ACCEPTED, false, query.isFollowUpNullAccepted());
+    addDateField(jsonObject, FOLLOW_UP_AFTER, query.getFollowUpAfter());
+    addDefaultField(jsonObject, EXCLUDE_SUBTASKS, false, query.isExcludeSubtasks());
+    addSuspensionStateField(jsonObject, query.getSuspensionState());
+    addField(jsonObject, CASE_DEFINITION_KEY, query.getCaseDefinitionKey());
+    addField(jsonObject, CASE_DEFINITION_ID, query.getCaseDefinitionId());
+    addField(jsonObject, CASE_DEFINITION_NAME, query.getCaseDefinitionName());
+    addField(jsonObject, CASE_DEFINITION_NAME_LIKE, query.getCaseDefinitionNameLike());
+    addField(jsonObject, CASE_INSTANCE_ID, query.getCaseInstanceId());
+    addField(jsonObject, CASE_INSTANCE_BUSINESS_KEY, query.getCaseInstanceBusinessKey());
+    addField(jsonObject, CASE_INSTANCE_BUSINESS_KEY_LIKE, query.getCaseInstanceBusinessKeyLike());
+    addField(jsonObject, CASE_EXECUTION_ID, query.getCaseExecutionId());
+    addTenantIdFields(jsonObject, query);
 
     if (query.getQueries().size() > 1 && !isOrQueryActive) {
-      JSONArray orQueries = new JSONArray();
+      JsonArray orQueries = JsonMapper.createArrayNode();
 
       for (TaskQueryImpl orQuery: query.getQueries()) {
         if (orQuery != null && orQuery.isOrQueryActive()) {
-          orQueries.put(toJsonObject(orQuery, true));
+          orQueries.add(toJsonObject(orQuery, true));
         }
       }
 
-      addField(json, OR_QUERIES, orQueries);
+      addField(jsonObject, OR_QUERIES, orQueries);
     }
 
     if (query.getOrderingProperties() != null && !query.getOrderingProperties().isEmpty()) {
-      addField(json, ORDERING_PROPERTIES,
+      addField(jsonObject, ORDERING_PROPERTIES,
           JsonQueryOrderingPropertyConverter.ARRAY_CONVERTER.toJsonArray(query.getOrderingProperties()));
     }
 
 
     // expressions
     for (Map.Entry<String, String> expressionEntry : query.getExpressions().entrySet()) {
-      json.put(expressionEntry.getKey() + "Expression", expressionEntry.getValue());
+      addField(jsonObject, expressionEntry.getKey() + "Expression", expressionEntry.getValue());
     }
 
-    return json;
+    return jsonObject;
   }
 
-  protected void addSuspensionStateField(JSONObject json, SuspensionState suspensionState) {
+  protected void addSuspensionStateField(JsonObject jsonObject, SuspensionState suspensionState) {
     if (suspensionState != null) {
       if (suspensionState.equals(SuspensionState.ACTIVE)) {
-        json.put(ACTIVE, true);
+        addField(jsonObject, ACTIVE, false);
       }
       else if (suspensionState.equals(SuspensionState.SUSPENDED)) {
-        json.put(SUSPENDED, true);
+        addField(jsonObject, SUSPENDED, true);
       }
     }
   }
 
-  protected void addTenantIdFields(JSONObject json, TaskQueryImpl query) {
+  protected void addTenantIdFields(JsonObject jsonObject, TaskQueryImpl query) {
     if (query.isTenantIdSet()) {
       if (query.getTenantIds() != null) {
-        addArrayField(json, TENANT_IDS, query.getTenantIds());
+        addArrayField(jsonObject, TENANT_IDS, query.getTenantIds());
       } else {
-        addField(json, WITHOUT_TENANT_ID, true);
+        addField(jsonObject, WITHOUT_TENANT_ID, true);
       }
     }
   }
 
-  protected void addVariablesFields(JSONObject json, List<TaskQueryVariableValue> variables) {
+  protected void addVariablesFields(JsonObject jsonObject, List<TaskQueryVariableValue> variables) {
     for (TaskQueryVariableValue variable : variables) {
       if (variable.isProcessInstanceVariable()) {
-        addVariable(json, PROCESS_VARIABLES, variable);
+        addVariable(jsonObject, PROCESS_VARIABLES, variable);
       }
       else if(variable.isLocal()) {
-        addVariable(json, TASK_VARIABLES, variable);
+        addVariable(jsonObject, TASK_VARIABLES, variable);
       }
       else {
-        addVariable(json, CASE_INSTANCE_VARIABLES, variable);
+        addVariable(jsonObject, CASE_INSTANCE_VARIABLES, variable);
       }
     }
   }
 
-  protected void addVariable(JSONObject json, String variableType, TaskQueryVariableValue variable) {
-    JSONArray array = json.optJSONArray(variableType);
-    if (array == null) {
-      array = new JSONArray();
+  protected void addVariable(JsonObject jsonObject, String variableType, TaskQueryVariableValue variable) {
+    JsonElement variables = jsonObject.get(variableType);
+    if (variables == null) {
+      variables = JsonMapper.createArrayNode();
     }
-    addVariable(array, variable);
-    json.put(variableType, array);
-  }
 
-  protected void addVariable(JSONArray array, TaskQueryVariableValue variable) {
-    array.put(variableValueConverter.toJsonObject(variable));
+    addElement((JsonArray) variables, variableValueConverter, variable);
+
+    addField(jsonObject, variableType, (JsonArray) variables);
   }
 
   @Override
-  public TaskQuery toObject(JSONObject json) {
+  public TaskQuery toObject(JsonObject json) {
     TaskQueryImpl query = new TaskQueryImpl();
 
     if (json.has(OR_QUERIES)) {
-      for (int i = 0; i < json.getJSONArray(OR_QUERIES).length(); i++) {
-        query.addOrQuery((TaskQueryImpl) toObject(json.getJSONArray(OR_QUERIES).getJSONObject(i)));
+      for (JsonElement jsonElement : json.get(OR_QUERIES).getAsJsonArray()) {
+        query.addOrQuery((TaskQueryImpl) toObject(jsonElement.getAsJsonObject()));
       }
     }
     if (json.has(TASK_ID)) {
-      query.taskId(json.getString(TASK_ID));
+      query.taskId(json.get(TASK_ID).getAsString());
     }
     if (json.has(NAME)) {
-      query.taskName(json.getString(NAME));
+      query.taskName(json.get(NAME).getAsString());
     }
     if (json.has(NAME_NOT_EQUAL)) {
-      query.taskNameNotEqual(json.getString(NAME_NOT_EQUAL));
+      query.taskNameNotEqual(json.get(NAME_NOT_EQUAL).getAsString());
     }
     if (json.has(NAME_LIKE)) {
-      query.taskNameLike(json.getString(NAME_LIKE));
+      query.taskNameLike(json.get(NAME_LIKE).getAsString());
     }
     if (json.has(NAME_NOT_LIKE)) {
-      query.taskNameNotLike(json.getString(NAME_NOT_LIKE));
+      query.taskNameNotLike(json.get(NAME_NOT_LIKE).getAsString());
     }
     if (json.has(DESCRIPTION)) {
-      query.taskDescription(json.getString(DESCRIPTION));
+      query.taskDescription(json.get(DESCRIPTION).getAsString());
     }
     if (json.has(DESCRIPTION_LIKE)) {
-      query.taskDescriptionLike(json.getString(DESCRIPTION_LIKE));
+      query.taskDescriptionLike(json.get(DESCRIPTION_LIKE).getAsString());
     }
     if (json.has(PRIORITY)) {
-      query.taskPriority(json.getInt(PRIORITY));
+      query.taskPriority(json.get(PRIORITY).getAsInt());
     }
     if (json.has(MIN_PRIORITY)) {
-      query.taskMinPriority(json.getInt(MIN_PRIORITY));
+      query.taskMinPriority(json.get(MIN_PRIORITY).getAsInt());
     }
     if (json.has(MAX_PRIORITY)) {
-      query.taskMaxPriority(json.getInt(MAX_PRIORITY));
+      query.taskMaxPriority(json.get(MAX_PRIORITY).getAsInt());
     }
     if (json.has(ASSIGNEE)) {
-      query.taskAssignee(json.getString(ASSIGNEE));
+      query.taskAssignee(json.get(ASSIGNEE).getAsString());
     }
     if (json.has(ASSIGNEE_LIKE)) {
-      query.taskAssigneeLike(json.getString(ASSIGNEE_LIKE));
+      query.taskAssigneeLike(json.get(ASSIGNEE_LIKE).getAsString());
     }
     if (json.has(INVOLVED_USER)) {
-      query.taskInvolvedUser(json.getString(INVOLVED_USER));
+      query.taskInvolvedUser(json.get(INVOLVED_USER).getAsString());
     }
     if (json.has(OWNER)) {
-      query.taskOwner(json.getString(OWNER));
+      query.taskOwner(json.get(OWNER).getAsString());
     }
-    if (json.has(ASSIGNED) && json.getBoolean(ASSIGNED)) {
+    if (json.has(ASSIGNED) && json.get(ASSIGNED).getAsBoolean()) {
       query.taskAssigned();
     }
-    if (json.has(UNASSIGNED) && json.getBoolean(UNASSIGNED)) {
+    if (json.has(UNASSIGNED) && json.get(UNASSIGNED).getAsBoolean()) {
       query.taskUnassigned();
     }
     if (json.has(DELEGATION_STATE)) {
-      query.taskDelegationState(DelegationState.valueOf(json.getString(DELEGATION_STATE)));
+      query.taskDelegationState(DelegationState.valueOf(json.get(DELEGATION_STATE).getAsString()));
     }
     if (json.has(CANDIDATE_USER)) {
-      query.taskCandidateUser(json.getString(CANDIDATE_USER));
+      query.taskCandidateUser(json.get(CANDIDATE_USER).getAsString());
     }
     if (json.has(CANDIDATE_GROUP)) {
-      query.taskCandidateGroup(json.getString(CANDIDATE_GROUP));
+      query.taskCandidateGroup(json.get(CANDIDATE_GROUP).getAsString());
     }
     if (json.has(CANDIDATE_GROUPS) && !json.has(CANDIDATE_USER) && !json.has(CANDIDATE_GROUP)) {
-      query.taskCandidateGroupIn(getList(json.getJSONArray(CANDIDATE_GROUPS)));
+      query.taskCandidateGroupIn(getList((JsonArray)json.get(CANDIDATE_GROUPS)));
     }
-    if (json.has(WITH_CANDIDATE_GROUPS) && json.getBoolean(WITH_CANDIDATE_GROUPS)) {
+    if (json.has(WITH_CANDIDATE_GROUPS) && json.get(WITH_CANDIDATE_GROUPS).getAsBoolean()) {
       query.withCandidateGroups();
     }
-    if (json.has(WITHOUT_CANDIDATE_GROUPS) && json.getBoolean(WITHOUT_CANDIDATE_GROUPS)) {
+    if (json.has(WITHOUT_CANDIDATE_GROUPS) && json.get(WITHOUT_CANDIDATE_GROUPS).getAsBoolean()) {
       query.withoutCandidateGroups();
     }
-    if (json.has(WITH_CANDIDATE_USERS) && json.getBoolean(WITH_CANDIDATE_USERS)) {
+    if (json.has(WITH_CANDIDATE_USERS) && json.get(WITH_CANDIDATE_USERS).getAsBoolean()) {
       query.withCandidateUsers();
     }
-    if (json.has(WITHOUT_CANDIDATE_USERS) && json.getBoolean(WITHOUT_CANDIDATE_USERS)) {
+    if (json.has(WITHOUT_CANDIDATE_USERS) && json.get(WITHOUT_CANDIDATE_USERS).getAsBoolean()) {
       query.withoutCandidateUsers();
     }
-    if (json.has(INCLUDE_ASSIGNED_TASKS) && json.getBoolean(INCLUDE_ASSIGNED_TASKS)) {
+    if (json.has(INCLUDE_ASSIGNED_TASKS) && json.get(INCLUDE_ASSIGNED_TASKS).getAsBoolean()) {
       query.includeAssignedTasksInternal();
     }
     if (json.has(PROCESS_INSTANCE_ID)) {
-      query.processInstanceId(json.getString(PROCESS_INSTANCE_ID));
+      query.processInstanceId(json.get(PROCESS_INSTANCE_ID).getAsString());
     }
     if (json.has(EXECUTION_ID)) {
-      query.executionId(json.getString(EXECUTION_ID));
+      query.executionId(json.get(EXECUTION_ID).getAsString());
     }
     if (json.has(ACTIVITY_INSTANCE_ID_IN)) {
-      query.activityInstanceIdIn(getArray(json.getJSONArray(ACTIVITY_INSTANCE_ID_IN)));
+      query.activityInstanceIdIn(getArray((JsonArray)json.get(ACTIVITY_INSTANCE_ID_IN)));
     }
     if (json.has(CREATED)) {
-      query.taskCreatedOn(new Date(json.getLong(CREATED)));
+      query.taskCreatedOn(new Date(json.get(CREATED).getAsLong()));
     }
     if (json.has(CREATED_BEFORE)) {
-      query.taskCreatedBefore(new Date(json.getLong(CREATED_BEFORE)));
+      query.taskCreatedBefore(new Date(json.get(CREATED_BEFORE).getAsLong()));
     }
     if (json.has(CREATED_AFTER)) {
-      query.taskCreatedAfter(new Date(json.getLong(CREATED_AFTER)));
+      query.taskCreatedAfter(new Date(json.get(CREATED_AFTER).getAsLong()));
     }
     if (json.has(KEY)) {
-      query.taskDefinitionKey(json.getString(KEY));
+      query.taskDefinitionKey(json.get(KEY).getAsString());
     }
     if (json.has(KEYS)) {
-      query.taskDefinitionKeyIn(getArray(json.getJSONArray(KEYS)));
+      query.taskDefinitionKeyIn(getArray((JsonArray)json.get(KEYS)));
     }
     if (json.has(KEY_LIKE)) {
-      query.taskDefinitionKeyLike(json.getString(KEY_LIKE));
+      query.taskDefinitionKeyLike(json.get(KEY_LIKE).getAsString());
     }
     if (json.has(PARENT_TASK_ID)) {
-      query.taskParentTaskId(json.getString(PARENT_TASK_ID));
+      query.taskParentTaskId(json.get(PARENT_TASK_ID).getAsString());
     }
     if (json.has(PROCESS_DEFINITION_KEY)) {
-      query.processDefinitionKey(json.getString(PROCESS_DEFINITION_KEY));
+      query.processDefinitionKey(json.get(PROCESS_DEFINITION_KEY).getAsString());
     }
     if (json.has(PROCESS_DEFINITION_KEYS)) {
-      query.processDefinitionKeyIn(getArray(json.getJSONArray(PROCESS_DEFINITION_KEYS)));
+      query.processDefinitionKeyIn(getArray((JsonArray)json.get(PROCESS_DEFINITION_KEYS)));
     }
     if (json.has(PROCESS_DEFINITION_ID)) {
-      query.processDefinitionId(json.getString(PROCESS_DEFINITION_ID));
+      query.processDefinitionId(json.get(PROCESS_DEFINITION_ID).getAsString());
     }
     if (json.has(PROCESS_DEFINITION_NAME)) {
-      query.processDefinitionName(json.getString(PROCESS_DEFINITION_NAME));
+      query.processDefinitionName(json.get(PROCESS_DEFINITION_NAME).getAsString());
     }
     if (json.has(PROCESS_DEFINITION_NAME_LIKE)) {
-      query.processDefinitionNameLike(json.getString(PROCESS_DEFINITION_NAME_LIKE));
+      query.processDefinitionNameLike(json.get(PROCESS_DEFINITION_NAME_LIKE).getAsString());
     }
     if (json.has(PROCESS_INSTANCE_BUSINESS_KEY)) {
-      query.processInstanceBusinessKey(json.getString(PROCESS_INSTANCE_BUSINESS_KEY));
+      query.processInstanceBusinessKey(json.get(PROCESS_INSTANCE_BUSINESS_KEY).getAsString());
     }
     if (json.has(PROCESS_INSTANCE_BUSINESS_KEYS)) {
-      query.processInstanceBusinessKeyIn(getArray(json.getJSONArray(PROCESS_INSTANCE_BUSINESS_KEYS)));
+      query.processInstanceBusinessKeyIn(getArray((JsonArray)json.get(PROCESS_INSTANCE_BUSINESS_KEYS)));
     }
     if (json.has(PROCESS_INSTANCE_BUSINESS_KEY_LIKE)) {
-      query.processInstanceBusinessKeyLike(json.getString(PROCESS_INSTANCE_BUSINESS_KEY_LIKE));
+      query.processInstanceBusinessKeyLike(json.get(PROCESS_INSTANCE_BUSINESS_KEY_LIKE).getAsString());
     }
     if (json.has(TASK_VARIABLES)) {
-      addVariables(query, json.getJSONArray(TASK_VARIABLES), true, false);
+      addVariables(query, json.get(TASK_VARIABLES).getAsJsonArray(), true, false);
     }
     if (json.has(PROCESS_VARIABLES)) {
-      addVariables(query, json.getJSONArray(PROCESS_VARIABLES), false, true);
+      addVariables(query, json.get(PROCESS_VARIABLES).getAsJsonArray(), false, true);
     }
     if (json.has(CASE_INSTANCE_VARIABLES)) {
-      addVariables(query, json.getJSONArray(CASE_INSTANCE_VARIABLES), false, false);
+      addVariables(query, json.get(CASE_INSTANCE_VARIABLES).getAsJsonArray(), false, false);
     }
     if (json.has(DUE)) {
-      query.dueDate(new Date(json.getLong(DUE)));
+      query.dueDate(new Date(json.get(DUE).getAsLong()));
     }
     if (json.has(DUE_BEFORE)) {
-      query.dueBefore(new Date(json.getLong(DUE_BEFORE)));
+      query.dueBefore(new Date(json.get(DUE_BEFORE).getAsLong()));
     }
     if (json.has(DUE_AFTER)) {
-      query.dueAfter(new Date(json.getLong(DUE_AFTER)));
+      query.dueAfter(new Date(json.get(DUE_AFTER).getAsLong()));
     }
     if (json.has(FOLLOW_UP)) {
-      query.followUpDate(new Date(json.getLong(FOLLOW_UP)));
+      query.followUpDate(new Date(json.get(FOLLOW_UP).getAsLong()));
     }
     if (json.has(FOLLOW_UP_BEFORE)) {
-      query.followUpBefore(new Date(json.getLong(FOLLOW_UP_BEFORE)));
+      query.followUpBefore(new Date(json.get(FOLLOW_UP_BEFORE).getAsLong()));
     }
     if (json.has(FOLLOW_UP_AFTER)) {
-      query.followUpAfter(new Date(json.getLong(FOLLOW_UP_AFTER)));
+      query.followUpAfter(new Date(json.get(FOLLOW_UP_AFTER).getAsLong()));
     }
     if (json.has(FOLLOW_UP_NULL_ACCEPTED)) {
-      query.setFollowUpNullAccepted(json.getBoolean(FOLLOW_UP_NULL_ACCEPTED));
+      query.setFollowUpNullAccepted(json.get(FOLLOW_UP_NULL_ACCEPTED).getAsBoolean());
     }
-    if (json.has(EXCLUDE_SUBTASKS) && json.getBoolean(EXCLUDE_SUBTASKS)) {
+    if (json.has(EXCLUDE_SUBTASKS) && json.get(EXCLUDE_SUBTASKS).getAsBoolean()) {
       query.excludeSubtasks();
     }
-    if (json.has(SUSPENDED) && json.getBoolean(SUSPENDED)) {
+    if (json.has(SUSPENDED) && json.get(SUSPENDED).getAsBoolean()) {
       query.suspended();
     }
-    if (json.has(ACTIVE) && json.getBoolean(ACTIVE)) {
+    if (json.has(ACTIVE) && json.get(ACTIVE).getAsBoolean()) {
       query.active();
     }
     if (json.has(CASE_DEFINITION_KEY)) {
-      query.caseDefinitionKey(json.getString(CASE_DEFINITION_KEY));
+      query.caseDefinitionKey(json.get(CASE_DEFINITION_KEY).getAsString());
     }
     if (json.has(CASE_DEFINITION_ID)) {
-      query.caseDefinitionId(json.getString(CASE_DEFINITION_ID));
+      query.caseDefinitionId(json.get(CASE_DEFINITION_ID).getAsString());
     }
     if (json.has(CASE_DEFINITION_NAME)) {
-      query.caseDefinitionName(json.getString(CASE_DEFINITION_NAME));
+      query.caseDefinitionName(json.get(CASE_DEFINITION_NAME).getAsString());
     }
     if (json.has(CASE_DEFINITION_NAME_LIKE)) {
-      query.caseDefinitionNameLike(json.getString(CASE_DEFINITION_NAME_LIKE));
+      query.caseDefinitionNameLike(json.get(CASE_DEFINITION_NAME_LIKE).getAsString());
     }
     if (json.has(CASE_INSTANCE_ID)) {
-      query.caseInstanceId(json.getString(CASE_INSTANCE_ID));
+      query.caseInstanceId(json.get(CASE_INSTANCE_ID).getAsString());
     }
     if (json.has(CASE_INSTANCE_BUSINESS_KEY)) {
-      query.caseInstanceBusinessKey(json.getString(CASE_INSTANCE_BUSINESS_KEY));
+      query.caseInstanceBusinessKey(json.get(CASE_INSTANCE_BUSINESS_KEY).getAsString());
     }
     if (json.has(CASE_INSTANCE_BUSINESS_KEY_LIKE)) {
-      query.caseInstanceBusinessKeyLike(json.getString(CASE_INSTANCE_BUSINESS_KEY_LIKE));
+      query.caseInstanceBusinessKeyLike(json.get(CASE_INSTANCE_BUSINESS_KEY_LIKE).getAsString());
     }
     if (json.has(CASE_EXECUTION_ID)) {
-      query.caseExecutionId(json.getString(CASE_EXECUTION_ID));
+      query.caseExecutionId(json.get(CASE_EXECUTION_ID).getAsString());
     }
     if (json.has(TENANT_IDS)) {
-      query.tenantIdIn(getArray(json.getJSONArray(TENANT_IDS)));
+      query.tenantIdIn(getArray((JsonArray) json.get(TENANT_IDS)));
     }
     if (json.has(WITHOUT_TENANT_ID)) {
       query.withoutTenantId();
     }
     if (json.has(ORDER_BY)) {
       List<QueryOrderingProperty> orderingProperties =
-          JsonLegacyQueryOrderingPropertyConverter.INSTANCE.fromOrderByString(json.getString(ORDER_BY));
+          JsonLegacyQueryOrderingPropertyConverter.INSTANCE.fromOrderByString(json.get(ORDER_BY).getAsString());
 
       query.setOrderingProperties(orderingProperties);
     }
     if (json.has(ORDERING_PROPERTIES)) {
-      JSONArray jsonArray = json.getJSONArray(ORDERING_PROPERTIES);
+      JsonArray jsonArray = (JsonArray) json.get(ORDERING_PROPERTIES);
       query.setOrderingProperties(JsonQueryOrderingPropertyConverter.ARRAY_CONVERTER.toObject(jsonArray));
     }
 
     // expressions
-    Iterator jsonIterator = json.keys();
-    while (jsonIterator.hasNext()) {
-      String key = (String) jsonIterator.next();
+    for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+      String key = entry.getKey();
       if (key.endsWith("Expression")) {
-        String expression = json.getString(key);
+        String expression = json.get(key).getAsString();
         query.addExpression(key.substring(0, key.length() - "Expression".length()), expression);
       }
     }
@@ -500,25 +500,25 @@ public class JsonTaskQueryConverter extends JsonObjectConverter<TaskQuery> {
     return query;
   }
 
-  private String[] getArray(JSONArray array) {
-    return getList(array).toArray(new String[array.length()]);
+  protected String[] getArray(JsonArray array) {
+    return getList(array).toArray(new String[array.size()]);
   }
 
-  protected List<String> getList(JSONArray array) {
-    List<String> list = new ArrayList<String>();
-    for (int i = 0; i < array.length(); i++) {
-      list.add(array.getString(i));
+  protected List<String> getList(JsonArray array) {
+    List<String> list = new ArrayList<>();
+    for (int i = 0; i < array.size(); i++) {
+      list.add(array.get(i).getAsString());
     }
     return list;
   }
 
-  private void addVariables(TaskQueryImpl query, JSONArray variables, boolean isTaskVariable, boolean isProcessVariable) {
-    for (int i = 0; i < variables.length(); i++) {
-      JSONObject variable = variables.getJSONObject(i);
-      String name = variable.getString(NAME);
-      Object value = variable.get("value");
-      QueryOperator operator = QueryOperator.valueOf(variable.getString("operator"));
-      query.addVariable(name, value, operator, isTaskVariable, isProcessVariable);
+  protected void addVariables(TaskQueryImpl query, JsonArray variables, boolean isTaskVariable, boolean isProcessVariable) {
+    for (JsonElement variable : variables) {
+      JsonObject variableObj = variable.getAsJsonObject();
+      String name = variableObj.get(NAME).getAsString();
+      JsonPrimitive value = (JsonPrimitive) variableObj.get("value");
+      QueryOperator operator = QueryOperator.valueOf(variableObj.get("operator").getAsString());
+      query.addVariable(name, JsonMapper.asObject(value), operator, isTaskVariable, isProcessVariable);
     }
   }
 

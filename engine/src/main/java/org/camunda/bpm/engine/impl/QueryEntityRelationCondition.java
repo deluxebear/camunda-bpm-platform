@@ -28,9 +28,9 @@ public class QueryEntityRelationCondition {
 
   protected QueryProperty property;
   protected QueryProperty comparisonProperty;
-  protected Object scalarValue;
+  protected String scalarValue;
 
-  public QueryEntityRelationCondition(QueryProperty queryProperty, Object scalarValue) {
+  public QueryEntityRelationCondition(QueryProperty queryProperty, String scalarValue) {
     this(queryProperty, null, scalarValue);
   }
 
@@ -38,8 +38,7 @@ public class QueryEntityRelationCondition {
     this(queryProperty, comparisonProperty, null);
   }
 
-  public QueryEntityRelationCondition(QueryProperty queryProperty, QueryProperty comparisonProperty,
-      Object scalarValue) {
+  public QueryEntityRelationCondition(QueryProperty queryProperty, QueryProperty comparisonProperty, String scalarValue) {
     this.property = queryProperty;
     this.comparisonProperty = comparisonProperty;
     this.scalarValue = scalarValue;
@@ -53,7 +52,7 @@ public class QueryEntityRelationCondition {
     return comparisonProperty;
   }
 
-  public Object getScalarValue() {
+  public String getScalarValue() {
     return scalarValue;
   }
 

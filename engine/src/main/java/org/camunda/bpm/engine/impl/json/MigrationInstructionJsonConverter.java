@@ -15,11 +15,9 @@
  */
 package org.camunda.bpm.engine.impl.json;
 
-import java.util.List;
-
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.migration.MigrationInstructionImpl;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
 
 public class MigrationInstructionJsonConverter extends JsonObjectConverter<MigrationInstruction> {
@@ -30,32 +28,38 @@ public class MigrationInstructionJsonConverter extends JsonObjectConverter<Migra
   public static final String TARGET_ACTIVITY_IDS = "targetActivityIds";
   public static final String UPDATE_EVENT_TRIGGER = "updateEventTrigger";
 
-  public JSONObject toJsonObject(MigrationInstruction instruction) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(MigrationInstruction instruction) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
 
-    JsonUtil.addArrayField(json, SOURCE_ACTIVITY_IDS, new String[]{instruction.getSourceActivityId()});
-    JsonUtil.addArrayField(json, TARGET_ACTIVITY_IDS, new String[]{instruction.getTargetActivityId()});
-    JsonUtil.addField(json, UPDATE_EVENT_TRIGGER, instruction.isUpdateEventTrigger());
+    JsonMapper.addArrayField(jsonObject, SOURCE_ACTIVITY_IDS, new String[]{instruction.getSourceActivityId()});
+    JsonMapper.addArrayField(jsonObject, TARGET_ACTIVITY_IDS, new String[]{instruction.getTargetActivityId()});
+    JsonMapper.addField(jsonObject, UPDATE_EVENT_TRIGGER, instruction.isUpdateEventTrigger());
 
-    return json;
+    return jsonObject;
   }
 
-  public MigrationInstruction toObject(JSONObject json) {
+  public MigrationInstruction toObject(JsonObject json) {
     return new MigrationInstructionImpl(
       readSourceActivityId(json),
       readTargetActivityId(json),
-      json.getBoolean(UPDATE_EVENT_TRIGGER)
+      json.get(UPDATE_EVENT_TRIGGER).getAsBoolean()
     );
   }
 
-  protected String readSourceActivityId(JSONObject json) {
-    List<Object> sourceActivityIds = JsonUtil.jsonArrayAsList(json.getJSONArray(SOURCE_ACTIVITY_IDS));
-    return (String) sourceActivityIds.get(0);
+  protected String readSourceActivityId(JsonObject json) {
+    if (json.has(SOURCE_ACTIVITY_IDS)) {
+      return json.get(SOURCE_ACTIVITY_IDS).getAsJsonArray().get(0).getAsString();
+    }
+
+    return null;
   }
 
-  protected String readTargetActivityId(JSONObject json) {
-    List<Object> targetActivityIds = JsonUtil.jsonArrayAsList(json.getJSONArray(TARGET_ACTIVITY_IDS));
-    return (String) targetActivityIds.get(0);
+  protected String readTargetActivityId(JsonObject json) {
+    if (json.has(SOURCE_ACTIVITY_IDS)) {
+      return json.get(TARGET_ACTIVITY_IDS).getAsJsonArray().get(0).getAsString();
+    }
+
+    return null;
   }
 
 

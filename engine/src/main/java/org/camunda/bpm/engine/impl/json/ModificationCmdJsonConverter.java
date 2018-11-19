@@ -15,6 +15,8 @@
  */
 package org.camunda.bpm.engine.impl.json;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.cmd.AbstractProcessInstanceModificationCommand;
 import org.camunda.bpm.engine.impl.cmd.ActivityAfterInstantiationCmd;
 import org.camunda.bpm.engine.impl.cmd.ActivityBeforeInstantiationCmd;
@@ -22,8 +24,7 @@ import org.camunda.bpm.engine.impl.cmd.ActivityCancellationCmd;
 import org.camunda.bpm.engine.impl.cmd.ActivityInstanceCancellationCmd;
 import org.camunda.bpm.engine.impl.cmd.TransitionInstanceCancellationCmd;
 import org.camunda.bpm.engine.impl.cmd.TransitionInstantiationCmd;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 
 public class ModificationCmdJsonConverter extends JsonObjectConverter<AbstractProcessInstanceModificationCommand> {
 
@@ -39,58 +40,58 @@ public class ModificationCmdJsonConverter extends JsonObjectConverter<AbstractPr
   public static final String CANCEL_TRANSITION_INSTANCES = "cancelTransitionInstances";
 
   @Override
-  public JSONObject toJsonObject(AbstractProcessInstanceModificationCommand command) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(AbstractProcessInstanceModificationCommand command) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
 
     if (command instanceof ActivityAfterInstantiationCmd) {
-      JsonUtil.addField(json, START_AFTER, ((ActivityAfterInstantiationCmd) command).getTargetElementId());
+      JsonMapper.addField(jsonObject, START_AFTER, ((ActivityAfterInstantiationCmd) command).getTargetElementId());
     }
     else if (command instanceof ActivityBeforeInstantiationCmd) {
-      JsonUtil.addField(json, START_BEFORE, ((ActivityBeforeInstantiationCmd) command).getTargetElementId());
+      JsonMapper.addField(jsonObject, START_BEFORE, ((ActivityBeforeInstantiationCmd) command).getTargetElementId());
     }
     else if (command instanceof TransitionInstantiationCmd) {
-      JsonUtil.addField(json, START_TRANSITION, ((TransitionInstantiationCmd) command).getTargetElementId());
+      JsonMapper.addField(jsonObject, START_TRANSITION, ((TransitionInstantiationCmd) command).getTargetElementId());
     }
     else if (command instanceof ActivityCancellationCmd) {
-      JsonUtil.addField(json, CANCEL_ALL, ((ActivityCancellationCmd) command).getActivityId());
-      JsonUtil.addField(json, CANCEL_CURRENT, ((ActivityCancellationCmd) command).isCancelCurrentActiveActivityInstances());
+      JsonMapper.addField(jsonObject, CANCEL_ALL, ((ActivityCancellationCmd) command).getActivityId());
+      JsonMapper.addField(jsonObject, CANCEL_CURRENT, ((ActivityCancellationCmd) command).isCancelCurrentActiveActivityInstances());
     }
     else if (command instanceof ActivityInstanceCancellationCmd) {
-      JsonUtil.addField(json, CANCEL_ACTIVITY_INSTANCES, ((ActivityInstanceCancellationCmd) command).getActivityInstanceId());
-      JsonUtil.addField(json, PROCESS_INSTANCE, ((ActivityInstanceCancellationCmd) command).getProcessInstanceId());
+      JsonMapper.addField(jsonObject, CANCEL_ACTIVITY_INSTANCES, ((ActivityInstanceCancellationCmd) command).getActivityInstanceId());
+      JsonMapper.addField(jsonObject, PROCESS_INSTANCE, ((ActivityInstanceCancellationCmd) command).getProcessInstanceId());
     }
     else if (command instanceof TransitionInstanceCancellationCmd) {
-      JsonUtil.addField(json, CANCEL_TRANSITION_INSTANCES, ((TransitionInstanceCancellationCmd) command).getTransitionInstanceId());
-      JsonUtil.addField(json, PROCESS_INSTANCE, ((TransitionInstanceCancellationCmd) command).getProcessInstanceId());
+      JsonMapper.addField(jsonObject, CANCEL_TRANSITION_INSTANCES, ((TransitionInstanceCancellationCmd) command).getTransitionInstanceId());
+      JsonMapper.addField(jsonObject, PROCESS_INSTANCE, ((TransitionInstanceCancellationCmd) command).getProcessInstanceId());
     }
 
-    return json;
+    return jsonObject;
   }
 
   @Override
-  public AbstractProcessInstanceModificationCommand toObject(JSONObject json) {
+  public AbstractProcessInstanceModificationCommand toObject(JsonObject json) {
 
     AbstractProcessInstanceModificationCommand cmd = null;
 
     if (json.has(START_BEFORE)) {
-      cmd = new ActivityBeforeInstantiationCmd(json.getString(START_BEFORE));
+      cmd = new ActivityBeforeInstantiationCmd(json.get(START_BEFORE).getAsString());
     }
     else if (json.has(START_AFTER)) {
-      cmd = new ActivityAfterInstantiationCmd(json.getString(START_AFTER));
+      cmd = new ActivityAfterInstantiationCmd(json.get(START_AFTER).getAsString());
     }
     else if (json.has(START_TRANSITION)) {
-      cmd = new TransitionInstantiationCmd(json.getString(START_TRANSITION));
+      cmd = new TransitionInstantiationCmd(json.get(START_TRANSITION).getAsString());
     }
     else if (json.has(CANCEL_ALL)) {
-      cmd = new ActivityCancellationCmd(json.getString(CANCEL_ALL));
-      boolean cancelCurrentActiveActivityInstances = json.getBoolean(CANCEL_CURRENT);
+      cmd = new ActivityCancellationCmd(json.get(CANCEL_ALL).getAsString());
+      boolean cancelCurrentActiveActivityInstances = json.get(CANCEL_CURRENT).getAsBoolean();
       ((ActivityCancellationCmd) cmd).setCancelCurrentActiveActivityInstances(cancelCurrentActiveActivityInstances);
     }
     else if (json.has(CANCEL_ACTIVITY_INSTANCES)) {
-      cmd = new ActivityInstanceCancellationCmd(json.getString(PROCESS_INSTANCE), json.getString(CANCEL_ACTIVITY_INSTANCES));
+      cmd = new ActivityInstanceCancellationCmd(json.get(PROCESS_INSTANCE).getAsString(), json.get(CANCEL_ACTIVITY_INSTANCES).getAsString());
     }
     else if (json.has(CANCEL_TRANSITION_INSTANCES)) {
-      cmd = new TransitionInstanceCancellationCmd(json.getString(PROCESS_INSTANCE), json.getString(CANCEL_TRANSITION_INSTANCES));
+      cmd = new TransitionInstanceCancellationCmd(json.get(PROCESS_INSTANCE).getAsString(), json.get(CANCEL_TRANSITION_INSTANCES).getAsString());
     }
 
     return cmd;

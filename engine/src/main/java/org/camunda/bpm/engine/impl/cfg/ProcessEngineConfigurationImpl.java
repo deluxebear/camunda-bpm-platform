@@ -43,6 +43,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
+import com.google.gson.Gson;
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.datasource.pooled.PooledDataSource;
 import org.apache.ibatis.mapping.Environment;
@@ -319,6 +320,7 @@ import org.camunda.bpm.engine.impl.scripting.engine.VariableScopeResolverFactory
 import org.camunda.bpm.engine.impl.scripting.env.ScriptEnvResolver;
 import org.camunda.bpm.engine.impl.scripting.env.ScriptingEnvironment;
 import org.camunda.bpm.engine.impl.util.IoUtil;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 import org.camunda.bpm.engine.impl.util.ParseUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
 import org.camunda.bpm.engine.impl.variable.ValueTypeResolverImpl;
@@ -778,6 +780,8 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected int loginDelayMaxTime = 60;
   protected int loginDelayBase = 3;
 
+  protected Gson objectMapper;
+
   // buildProcessEngine ///////////////////////////////////////////////////////
 
   @Override
@@ -793,6 +797,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected void init() {
     invokePreInit();
     initDefaultCharset();
+    initObjectMapper();
     initHistoryLevel();
     initHistoryEventProducer();
     initCmmnHistoryEventProducer();
@@ -844,6 +849,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     initAdminUser();
     initAdminGroups();
     invokePostInit();
+  }
+
+  protected void initObjectMapper() {
+    if (objectMapper == null) {
+      objectMapper = JsonMapper.createObjectMapper();
+    }
   }
 
   public void initHistoryRemovalTime() {
@@ -4257,6 +4268,10 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public void setAdminUsers(List<String> adminUsers) {
     this.adminUsers = adminUsers;
+  }
+
+  public Gson getObjectMapper() {
+    return objectMapper;
   }
 
 }

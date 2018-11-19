@@ -15,13 +15,13 @@
  */
 package org.camunda.bpm.engine.impl.dmn.batch;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.batch.BatchConfiguration;
 import org.camunda.bpm.engine.impl.json.JsonObjectConverter;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
+
+import java.util.List;
 
 public class DeleteHistoricDecisionInstanceBatchConfigurationJsonConverter extends JsonObjectConverter<BatchConfiguration> {
 
@@ -29,24 +29,18 @@ public class DeleteHistoricDecisionInstanceBatchConfigurationJsonConverter exten
 
   public static final String HISTORIC_DECISION_INSTANCE_IDS = "historicDecisionInstanceIds";
 
-  public JSONObject toJsonObject(BatchConfiguration configuration) {
-    JSONObject json = new JSONObject();
-    JsonUtil.addListField(json, HISTORIC_DECISION_INSTANCE_IDS, configuration.getIds());
-    return json;
+  public JsonObject toJsonObject(BatchConfiguration configuration) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
+    JsonMapper.addListField(jsonObject, HISTORIC_DECISION_INSTANCE_IDS, configuration.getIds());
+    return jsonObject;
   }
 
-  public BatchConfiguration toObject(JSONObject json) {
-    BatchConfiguration configuration = new BatchConfiguration(readDecisionInstanceIds(json));
-    return configuration;
+  public BatchConfiguration toObject(JsonObject json) {
+    return new BatchConfiguration(readDecisionInstanceIds(json));
   }
 
-  protected List<String> readDecisionInstanceIds(JSONObject jsonObject) {
-    List<Object> objects = JsonUtil.jsonArrayAsList(jsonObject.getJSONArray(HISTORIC_DECISION_INSTANCE_IDS));
-    List<String> decisionInstanceIds = new ArrayList<String>();
-    for (Object object : objects) {
-      decisionInstanceIds.add((String) object);
-    }
-    return decisionInstanceIds;
+  protected List<String> readDecisionInstanceIds(JsonObject jsonNode) {
+    return JsonMapper.asList(jsonNode.get(HISTORIC_DECISION_INSTANCE_IDS));
   }
 
 }

@@ -15,12 +15,12 @@
  */
 package org.camunda.bpm.engine.impl.batch.deletion;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.batch.BatchConfiguration;
 import org.camunda.bpm.engine.impl.json.JsonObjectConverter;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,24 +32,18 @@ public class DeleteHistoricProcessInstanceBatchConfigurationJsonConverter extend
 
   public static final String HISTORIC_PROCESS_INSTANCE_IDS = "historicProcessInstanceIds";
 
-  public JSONObject toJsonObject(BatchConfiguration configuration) {
-    JSONObject json = new JSONObject();
+  public JsonObject toJsonObject(BatchConfiguration configuration) {
+    JsonObject jsonObject = JsonMapper.createObjectNode();
 
-    JsonUtil.addListField(json, HISTORIC_PROCESS_INSTANCE_IDS, configuration.getIds());
-    return json;
+    JsonMapper.addListField(jsonObject, HISTORIC_PROCESS_INSTANCE_IDS, configuration.getIds());
+    return jsonObject;
   }
 
-  public BatchConfiguration toObject(JSONObject json) {
-    BatchConfiguration configuration = new BatchConfiguration(readProcessInstanceIds(json));
-    return configuration;
+  public BatchConfiguration toObject(JsonObject json) {
+    return new BatchConfiguration(readProcessInstanceIds(json));
   }
 
-  protected List<String> readProcessInstanceIds(JSONObject jsonObject) {
-    List<Object> objects = JsonUtil.jsonArrayAsList(jsonObject.getJSONArray(HISTORIC_PROCESS_INSTANCE_IDS));
-    List<String> processInstanceIds = new ArrayList<String>();
-    for (Object object : objects) {
-      processInstanceIds.add((String) object);
-    }
-    return processInstanceIds;
+  protected List<String> readProcessInstanceIds(JsonObject jsonObject) {
+    return JsonMapper.asList(jsonObject.get(HISTORIC_PROCESS_INSTANCE_IDS));
   }
 }

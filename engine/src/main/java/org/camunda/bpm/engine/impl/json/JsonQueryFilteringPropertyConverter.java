@@ -15,13 +15,14 @@
  */
 package org.camunda.bpm.engine.impl.json;
 
-import java.util.List;
-
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.camunda.bpm.engine.impl.QueryEntityRelationCondition;
 import org.camunda.bpm.engine.impl.QueryPropertyImpl;
-import org.camunda.bpm.engine.impl.util.JsonUtil;
-import org.camunda.bpm.engine.impl.util.json.JSONObject;
+import org.camunda.bpm.engine.impl.util.JsonMapper;
 import org.camunda.bpm.engine.query.QueryProperty;
+
+import java.util.List;
 
 /**
  * @author Thorben Lindhauer
@@ -32,48 +33,47 @@ public class JsonQueryFilteringPropertyConverter extends JsonObjectConverter<Que
   protected static JsonQueryFilteringPropertyConverter INSTANCE =
       new JsonQueryFilteringPropertyConverter();
 
-  protected static JsonArrayConverter<List<QueryEntityRelationCondition>> ARRAY_CONVERTER =
-      new JsonArrayOfObjectsConverter<QueryEntityRelationCondition>(INSTANCE);
+  protected static JsonArrayConverter<List<QueryEntityRelationCondition>> ARRAY_CONVERTER = new JsonArrayOfObjectsConverter<>(INSTANCE);
 
   public static final String BASE_PROPERTY = "baseField";
   public static final String COMPARISON_PROPERTY = "comparisonField";
   public static final String SCALAR_VALUE = "value";
 
-  public JSONObject toJsonObject(QueryEntityRelationCondition filteringProperty) {
-    JSONObject jsonObject = new JSONObject();
+  public JsonObject toJsonObject(QueryEntityRelationCondition filteringProperty) {
+    JsonObject jsonObjectBuilder = JsonMapper.createObjectNode();
 
-    JsonUtil.addField(jsonObject, BASE_PROPERTY, filteringProperty.getProperty().getName());
+    JsonMapper.addField(jsonObjectBuilder, BASE_PROPERTY, filteringProperty.getProperty().getName());
 
     QueryProperty comparisonProperty = filteringProperty.getComparisonProperty();
     if (comparisonProperty != null) {
-      JsonUtil.addField(jsonObject, COMPARISON_PROPERTY, comparisonProperty.getName());
+      JsonMapper.addField(jsonObjectBuilder, COMPARISON_PROPERTY, comparisonProperty.getName());
     }
 
-    Object scalarValue = filteringProperty.getScalarValue();
+    String scalarValue = filteringProperty.getScalarValue();
     if (scalarValue != null) {
-      JsonUtil.addField(jsonObject, SCALAR_VALUE, scalarValue);
+      JsonMapper.addField(jsonObjectBuilder, SCALAR_VALUE, scalarValue);
     }
 
-    return jsonObject;
+    return jsonObjectBuilder;
   }
 
-  public QueryEntityRelationCondition toObject(JSONObject jsonObject) {
+  public QueryEntityRelationCondition toObject(JsonObject jsonObject) {
     // this is limited in that it allows only String values;
     // that is sufficient for current use case with task filters
     // but could be extended by a data type in the future
-    Object scalarValue = null;
+    String scalarValue = null;
     if (jsonObject.has(SCALAR_VALUE)) {
-      scalarValue = jsonObject.getString(SCALAR_VALUE);
+      scalarValue = jsonObject.get(SCALAR_VALUE).getAsString();
     }
 
     QueryProperty baseProperty = null;
     if (jsonObject.has(BASE_PROPERTY)) {
-      baseProperty = new QueryPropertyImpl(jsonObject.getString(BASE_PROPERTY));
+      baseProperty = new QueryPropertyImpl(jsonObject.get(BASE_PROPERTY).getAsString());
     }
 
     QueryProperty comparisonProperty = null;
     if (jsonObject.has(COMPARISON_PROPERTY)) {
-      comparisonProperty = new QueryPropertyImpl(jsonObject.getString(COMPARISON_PROPERTY));
+      comparisonProperty = new QueryPropertyImpl(jsonObject.get(COMPARISON_PROPERTY).getAsString());
     }
 
     return new QueryEntityRelationCondition(baseProperty, comparisonProperty, scalarValue);
